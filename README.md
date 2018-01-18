@@ -53,6 +53,7 @@ on the cluster.
   the file in that path. A `hide: true` parameter ensures that the value is not logged and instead replaced with `***HIDDEN***`
 * `version`: *Optional* Chart version to deploy. Only applies if `chart` is not a file.
 * `delete`: *Optional.* Deletes the release instead of installing it. Requires the `name`. (Default: false)
+* `purge`: *Optional.* Purge the release when delete is true. Requires the `name`. (Default: false)
 * `replace`: *Optional.* Replace deleted release with same name. (Default: false)
 * `devel`: *Optional.* Allow development versions of chart to be installed. This is useful when wanting to install pre-release
   charts (i.e. 1.0.2-rc1) without having to specify a version. (Default: false)

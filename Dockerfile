@@ -1,5 +1,4 @@
-FROM linkyard/docker-helm:2.7.2
-LABEL maintainer "mario.siegenthaler@linkyard.ch"
+FROM sk88ks/docker-helm:2.7.2
 
 RUN apk add --update --upgrade --no-cache jq bash nodejs curl yarn
 
