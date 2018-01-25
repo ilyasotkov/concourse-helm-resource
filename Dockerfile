@@ -1,4 +1,4 @@
-FROM sk88ks/docker-helm:2.7.2-gcloud
+FROM sk88ks/docker-helm:2.8.0
 
 RUN apk add --update --upgrade --no-cache jq bash nodejs curl yarn
 
