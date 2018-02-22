@@ -1,5 +1,7 @@
 # Helm Resource for Concourse
 
+🔌 This repository is a fork of <https://github.com/linkyard/concourse-helm-resource>
+
 Deploy to [Kubernetes Helm](https://github.com/kubernetes/helm) from [Concourse](https://concourse.ci/).
 
 ## Installing
