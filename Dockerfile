@@ -12,12 +12,6 @@ RUN helm init --client-only
 ARG PLUGIN_GCS_REPO=https://github.com/viglesiasce/helm-gcs.git
 RUN helm plugin install ${PLUGIN_GCS_REPO}
 
-RUN yarn global add typescript
-
-ADD wait-for-helm-deployment /opt/wait-for-helm-deployment
-RUN cd /opt/wait-for-helm-deployment && \
-    yarn
-
 ADD assets /opt/resource
 RUN chmod +x /opt/resource/*
 

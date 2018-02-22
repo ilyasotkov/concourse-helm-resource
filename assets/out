@@ -137,6 +137,9 @@ helm_install() {
     helm_cmd="$helm_cmd --devel"
     helm_echo="$helm_echo --devel"
   fi
+  if [ -n "$wait_until_ready" ] && [ "$wait_until_ready" -gt "0" ]; then
+    helm_cmd="$helm_cmd --wait --timeout $wait_until_ready"
+  fi
   if [ -n "$version" ]; then
     helm_cmd="$helm_cmd --version $version"
     helm_echo="$helm_echo --version $version"
@@ -166,6 +169,10 @@ helm_upgrade() {
       helm_cmd="$helm_cmd -f $source/$value"
       helm_echo="$helm_echo -f $source/$value"
     done
+  fi
+  if [ -n "$wait_until_ready" ] && [ "$wait_until_ready" -gt "0" ]; then
+    helm_cmd="$helm_cmd --wait --timeout $wait_until_ready"
+    helm_echo="$helm_echo --wait --timeout $wait_until_ready"
   fi
   set_overriden_values
   if [ "$debug" = true ]; then
@@ -211,7 +218,7 @@ helm_delete() {
   echo "Running command $helm_echo"
   eval $helm_cmd
 }
- 
+
 helm_purge() {
   if [ -z "$release" ]; then
     echo "invalid payload (missing release if delete=true)"
@@ -232,10 +239,9 @@ helm_purge() {
   eval $helm_cmd
 }
 
-wait_ready() {
+wait_ready_notice() {
   if [ -n "$wait_until_ready" ] && [ "$wait_until_ready" -gt "0" ]; then
-    echo "Waiting until deployment of $release is ready..."
-    node /opt/wait-for-helm-deployment/src/index.js $release $tiller_namespace $wait_until_ready
+    echo "Waiting until deployment of $release is ready... (up to $wait_until_ready seconds)"
   fi
 }
 
@@ -259,7 +265,7 @@ else
 
   revision=$(current_revision)
   echo "Deployed revision $revision of $release"
-  wait_ready
+  wait_ready_notice
   result="$(jq -n "{version:{release:\"$release\", revision:\"$revision\"}, metadata: [{name: \"release\", value: \"$release\"},{name: \"revision\", value: \"$revision\"}]}")"
   echo "$result" | jq -s add  >&3
 fi
