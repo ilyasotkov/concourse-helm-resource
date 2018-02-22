@@ -1,8 +1,17 @@
 # Helm Resource for Concourse
 
+Deploy to a Kubernetes cluster via [Helm releases](https://github.com/kubernetes/helm) from [Concourse](https://concourse.ci/)
+
+<hr>
+
 🔌 This repository is a fork of <https://github.com/linkyard/concourse-helm-resource>
 
-Deploy to [Kubernetes Helm](https://github.com/kubernetes/helm) from [Concourse](https://concourse.ci/).
+### Changes
+
+- `cluster_config` (a kubeconfig file) is now used for authenticating to Kubernetes
+- `kubectl` version upgraded to 1.8.7
+- `helm` version upgraded to 2.8.0
+- Native Helm `--wait` flag is used to determine the job's status (merged [PR #7](https://github.com/linkyard/concourse-helm-resource/pull/7))
 
 ## Installing
 
@@ -12,7 +21,7 @@ resource_types:
 - name: helm
   type: docker-image
   source:
-    repository: linkyard/concourse-helm-resource
+    repository: ilyasotkov/concourse-helm-resource
 ```
 
 
@@ -70,10 +79,7 @@ resources:
 - name: myapp-helm
   type: helm
   source:
-    cluster_url: https://kube-master.domain.example
-    cluster_ca: _base64 encoded CA pem_
-    admin_key: _base64 encoded key pem_
-    admin_cert: _base64 encoded certificate pem_
+    cluster_config: ((kube_config))
     repos:
       - name: some_repo
         url: https://somerepo.github.io/charts
