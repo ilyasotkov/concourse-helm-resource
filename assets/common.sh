@@ -8,7 +8,6 @@ setup_kubernetes() {
   cluster_config=$(jq -r '.source.cluster_config // ""' < $payload)
 
   mkdir -p /root/.kube
-  config_path="/root/.kube/config"
 
   echo "$cluster_config" > /root/.kube/config
 
