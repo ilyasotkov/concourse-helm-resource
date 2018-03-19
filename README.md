@@ -10,8 +10,6 @@ Deploy to a Kubernetes cluster via [Helm releases](https://github.com/kubernetes
 
 - `kubeconfig` (a kubeconfig file) can be used for authenticating to Kubernetes
 - `gcloud_auth`, `gcloud_project`, `gcloud_zone`, `gcloud_cluster` can be used to authenticate to Google Kubernetes Engine using a GCP service account key
-- `kubectl` version upgraded to 1.8.7
-- `helm` version upgraded to 2.8.0
 - Native Helm `--wait` flag is used to determine the job's status (merged [PR #7](https://github.com/linkyard/concourse-helm-resource/pull/7))
 
 ## Installing
