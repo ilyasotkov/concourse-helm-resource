@@ -20,7 +20,8 @@ resource_types:
 - name: helm
   type: docker-image
   source:
-    repository: ilyasotkov/concourse-helm-resource
+    repository: ilyasotkov/concourse-helm-resourse
+    tag: 1.0.0
 ```
 
 
@@ -81,32 +82,56 @@ on the cluster.
 
 ## Example
 
+Full example pipeline: <https://github.com/ilyasotkov/concourse-pipelines/blob/master/pipelines/gitlab-flow-semver.yml>
+
 ### Out
 
 Define the resource:
 
-```
+```yaml
 resources:
 - name: myapp-helm
   type: helm
   source:
-    kubeconfig: ((kube.config))
+    kubeconfig: |
+        apiVersion: v1
+        kind: Config
+        preferences: {}
+
+        contexts:
+        - context:
+            cluster: development
+            namespace: ramp
+            user: developer
+          name: dev-ramp-up
     repos:
       - name: some_repo
         url: https://somerepo.github.io/charts
 ```
 
-```
+```yaml
 - name: helm-release
   type: helm
   source:
-    gcloud_auth: ((gcloud-auth))
-    gcloud_project: ((gcloud-project))
-    gcloud_zone: ((gcloud-zone))
-    gcloud_cluster: ((gcloud-cluster))
+    gcloud_auth: |
+        {
+        "type": "service_account",
+        "project_id": "XXX",
+        "private_key_id": "XXX",
+        "private_key": "XXX",
+        "client_email": "XXX",
+        "client_id": "XXX",
+        "auth_uri": "XXX",
+        "token_uri": "XXX",
+        "auth_provider_x509_cert_url": "XXX",
+        "client_x509_cert_url": "XXX"
+        }
+    gcloud_project: my-project-696969
+    gcloud_zone: europe-west1-d
+    gcloud_cluster: k8s-cluster
     repos:
-    - name: private
-      url: https://((chart-repo.username)):((chart-repo.password))@((chart-repo.uri))
+    - name: my-charts
+      url: https://my-charts.github.io/charts
 ```
 
 Add to job:
