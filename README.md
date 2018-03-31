@@ -2,7 +2,7 @@
 
 Deploy to a Kubernetes cluster via [Helm releases](https://github.com/kubernetes/helm) from [Concourse](https://concourse.ci/)
 
-<hr>
+---
 
 🔌 This repository is a fork of <https://github.com/linkyard/concourse-helm-resource>
 
@@ -20,7 +20,7 @@ resource_types:
 - name: helm
   type: docker-image
   source:
-    repository: ilyasotkov/concourse-helm-resourse
+    repository: ilyasotkov/concourse-helm-resource
     tag: 1.0.0
 ```
 
