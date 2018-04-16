@@ -1,6 +1,6 @@
 # Helm Resource for Concourse
 
-Deploy to a Kubernetes cluster via [Helm releases](https://github.com/kubernetes/helm) from [Concourse](https://concourse.ci/)
+Install a [Helm chart](https://github.com/kubernetes/helm) to a generic Kubernetes cluster (using a kubeconfig file) or a Google Kubernetes Engine cluster (using a GCP service account JSON key) from [Concourse](https://concourse.ci/)
 
 ---
 
@@ -9,10 +9,17 @@ Deploy to a Kubernetes cluster via [Helm releases](https://github.com/kubernetes
 ### Changes
 
 - `kubeconfig` (a kubeconfig file) can be used for authenticating to Kubernetes
-- `gcloud_auth`, `gcloud_project`, `gcloud_zone`, `gcloud_cluster` can be used to authenticate to Google Kubernetes Engine using a GCP service account key
+- `gcloud_project`, `gcloud_cluster`, `gcloud_auth` can be used to fetch credentials for a Google Kubernetes Engine cluster
 - Native Helm `--wait` flag is used to determine the job's status (merged [PR #7](https://github.com/linkyard/concourse-helm-resource/pull/7))
 
-## Installing
+### Components
+
+| Component | Version |
+| --- | --- |
+| `helm` | 2.8.2 |
+| Google Cloud SDK | 197.0.0 |
+
+## Add resource type to pipeline
 
 Add the resource type to your pipeline:
 ```
@@ -21,7 +28,7 @@ resource_types:
   type: docker-image
   source:
     repository: ilyasotkov/concourse-helm-resource
-    tag: 1.0.0
+    tag: 1.0.1
 ```
 
 
@@ -33,10 +40,9 @@ Authentication can be done either through a kubeconfig file or using GCP service
 
 * `kubeconfig`: *Required if `gcloud_auth` is not present.* kubeconfig file contents
 
-* `gcloud_auth`: *Required if `kubeconfig` is not present.* GCP JSON private key file contents
 * `gcloud_project`: *Required if `kubeconfig` is not present.* GCP project name
-* `gcloud_zone`: *Required if `kubeconfig` is not present.* GCP default compute zone
 * `gcloud_cluster`: *Required if `kubeconfig` is not present.* GKE cluster name
+* `gcloud_auth`: *Required if `kubeconfig` is not present.* GCP JSON private key file contents
 
 ### Optional values
 
@@ -54,7 +60,9 @@ Authentication can be done either through a kubeconfig file or using GCP service
 Any new revisions to the release are returned, no matter their current state. The release must be specified in the
 source for `check` to work.
 
-### `in`: Not Supported
+### `in`
+
+Not Supported
 
 ### `out`: Deploy the helm chart
 
@@ -90,20 +98,19 @@ Define the resource:
 
 ```yaml
 resources:
-- name: myapp-helm
+- name: helm-release
   type: helm
   source:
     kubeconfig: |
-        apiVersion: v1
-        kind: Config
-        preferences: {}
-
-        contexts:
-        - context:
-            cluster: development
-            namespace: ramp
-            user: developer
-          name: dev-ramp-up
+      apiVersion: v1
+      kind: Config
+      preferences: {}
+      contexts:
+      - context:
+          cluster: development
+          namespace: ramp
+          user: developer
+        name: dev-ramp-up
     repos:
       - name: some_repo
         url: https://somerepo.github.io/charts
@@ -113,22 +120,21 @@ resources:
 - name: helm-release
   type: helm
   source:
-    gcloud_auth: |
-        {
-        "type": "service_account",
-        "project_id": "XXX",
-        "private_key_id": "XXX",
-        "private_key": "XXX",
-        "client_email": "XXX",
-        "client_id": "XXX",
-        "auth_uri": "XXX",
-        "token_uri": "XXX",
-        "auth_provider_x509_cert_url": "XXX",
-        "client_x509_cert_url": "XXX"
-        }
     gcloud_project: my-project-696969
-    gcloud_zone: europe-west1-d
     gcloud_cluster: k8s-cluster
+    gcloud_auth: |
+      {
+      "type": "service_account",
+      "project_id": "XXX",
+      "private_key_id": "XXX",
+      "private_key": "XXX",
+      "client_email": "XXX",
+      "client_id": "XXX",
+      "auth_uri": "XXX",
+      "token_uri": "XXX",
+      "auth_provider_x509_cert_url": "XXX",
+      "client_x509_cert_url": "XXX"
+      }
     repos:
     - name: my-charts
       url: https://my-charts.github.io/charts
@@ -136,11 +142,11 @@ resources:
 
 Add to job:
 
-```
+```yaml
 jobs:
   # ...
   plan:
-  - put: myapp-helm
+  - put: release-app
     params:
       chart: source-repo/chart-0.0.1.tgz
       values: source-repo/values.yaml
