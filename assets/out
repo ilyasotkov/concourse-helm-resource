@@ -55,25 +55,6 @@ else
     chart_full="$chart"
 fi
 
-is_deployed() {
-    if [ -n "$1" ]; then
-        set +e
-        set +o pipefail
-        $helm_request_base history --tiller-namespace $tiller_namespace $1 2>&1 | grep "DEPLOYED" > /dev/null
-        if [ $? = 0 ]; then
-            # exists
-            echo true
-        else
-            # does not exist
-            echo false
-        fi
-        set -o pipefail
-        set -e
-    else
-        echo false
-    fi
-}
-
 set_overriden_values() {
     # Get value from given path
     for overriden_value_file in $override_values_file; do
@@ -110,10 +91,8 @@ set_overriden_values() {
 }
 
 helm_install() {
-    helm_cmd="$helm_request_base install"
-    helm_echo="$helm_request_base install"
-    helm_cmd="$helm_cmd --namespace $namespace --tiller-namespace $tiller_namespace"
-    helm_echo="$helm_echo --namespace $namespace --tiller-namespace $tiller_namespace"
+    helm_cmd="$helm_request_base install --namespace $namespace"
+    helm_echo="$helm_request_base install --namespace $namespace"
     if [ -n "$release" ]; then
         helm_cmd="$helm_cmd -n $release"
         helm_echo="$helm_echo -n $release"
@@ -157,13 +136,13 @@ helm_install() {
 
 # Find the current revision of a helm release
 current_revision() {
-    revision=`$helm_request_base history --tiller-namespace $tiller_namespace $release | grep "DEPLOYED" | awk '{print $1}'`
+    revision=`$helm_request_base history $release | grep "DEPLOYED" | awk '{print $1}'`
     echo $revision
 }
 
 helm_upgrade() {
-    helm_cmd="$helm_request_base upgrade --tiller-namespace $tiller_namespace $release"
-    helm_echo="$helm_request_base upgrade --tiller-namespace $tiller_namespace $release"
+    helm_cmd="$helm_request_base upgrade $release"
+    helm_echo="$helm_request_base upgrade $release"
     if [ -n "$values" ]; then
         for value in $values; do
             helm_cmd="$helm_cmd -f $source/$value"
@@ -205,8 +184,8 @@ helm_delete() {
         exit 1
     fi
     echo "Deleting the release $release..."
-    helm_cmd="$helm_request_base delete --tiller-namespace $tiller_namespace"
-    helm_echo="$helm_request_base delete --tiller-namespace $tiller_namespace"
+    helm_cmd="$helm_request_base delete"
+    helm_echo="$helm_request_base delete"
     if [ "$debug" = true ]; then
         helm_cmd="$helm_cmd --dry-run --debug"
         helm_echo="$helm_echo --dry-run --debug"
@@ -225,8 +204,8 @@ helm_purge() {
         exit 1
     fi
     echo "Deleting with purge the release $release..."
-    helm_cmd="$helm_request_base delete --purge"
-    helm_echo="$helm_request_base delete --purge"
+    helm_cmd="helm delete --purge"
+    helm_echo="helm delete --purge"
     if [ "$debug" = true ]; then
         helm_cmd="$helm_cmd --dry-run --debug"
         helm_echo="$helm_echo --dry-run --debug"
@@ -245,6 +224,25 @@ wait_ready_notice() {
     fi
 }
 
+is_deployed() {
+    if [ -n "$1" ]; then
+        set +e
+        set +o pipefail
+        eval "$helm_request_base history $1" 2>&1 | grep 'DEPLOYED' > /dev/null
+        if [ $? = 0 ]; then
+            # exists
+            echo true
+        else
+            # does not exist
+            echo false
+        fi
+        set -o pipefail
+        set -e
+    else
+        echo false
+    fi
+}
+
 
 if [ "$delete" = true ]; then
     if [ "$purge" = true ]; then
@@ -252,10 +250,12 @@ if [ "$delete" = true ]; then
     else
         helm_delete
     fi
-    result="$(jq -n "{version:{release:\"$release\", deleted: \"true\"}, metadata: [{name: \"release\", value: \"$release\"}] }")"
+    result="$(jq -n "{version:{release:\"$release\", deleted: \"true\"}, metadata: [{name: \"release\", value: \"$release\"}]}")"
     echo "$result" | jq -s add  >&3
 else
-    if [ "$(is_deployed $release)" = true ]; then
+    echo "Choosing whether to install or upgrade..."
+    eval "$helm_request_base history $release"
+    if [ "$(is_deployed $release)" = "true" ]; then
         echo "Upgrading $release"
         helm_upgrade
     else
