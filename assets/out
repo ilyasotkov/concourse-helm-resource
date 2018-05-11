@@ -37,235 +37,235 @@ override_secrets_file=$(jq -r ".params.override_values[]? | if .key and .path an
 recreate_pods=$(jq -r '.params.recreate_pods // "false"' < $payload)
 
 if [ -z "$chart" ]; then
-  echo "invalid payload (missing chart)"
-  exit 1
+    echo "invalid payload (missing chart)"
+    exit 1
 fi
 if [ -n "$release_file" ]; then
-  release=`cat $source/$release_file`
+    release=`cat $source/$release_file`
 else
-  release=$(jq -r '.source.release // ""' < $payload)
+    release=$(jq -r '.source.release // ""' < $payload)
 fi
 
 if [[ "$chart" == *.tgz ]] || [[ -d "$source/$chart" ]]; then
-  # it's a file/directory
-  chart_full="$source/$chart"
-  version=""
+    # it's a file/directory
+    chart_full="$source/$chart"
+    version=""
 else
-  # get from a repo
-  chart_full="$chart"
+    # get from a repo
+    chart_full="$chart"
 fi
 
-is_deployed() {
-  if [ -n "$1" ]; then
-    set +e
-    set +o pipefail
-    helm history --tiller-namespace $tiller_namespace $1 2>&1 | grep "DEPLOYED" > /dev/null
-    if [ $? = 0 ]; then
-      # exists
-      echo true
-    else
-      # does not exist
-      echo false
-    fi
-    set -o pipefail
-    set -e
-  else
-    echo false
-  fi
-}
-
 set_overriden_values() {
-  # Get value from given path
-  for overriden_value_file in $override_values_file; do
-    # Get key and value for each overridden file value
-    key=${overriden_value_file%%=*}
-    value=${overriden_value_file#*=}
-    helm_cmd="$helm_cmd --set '$key=$(cat $source/$value)'"
-    helm_echo="$helm_echo --set '$key=$(cat $source/$value)'"
-  done
+    # Get value from given path
+    for overriden_value_file in $override_values_file; do
+        # Get key and value for each overridden file value
+        key=${overriden_value_file%%=*}
+        value=${overriden_value_file#*=}
+        helm_cmd="$helm_cmd --set '$key=$(cat $source/$value)'"
+        helm_echo="$helm_echo --set '$key=$(cat $source/$value)'"
+    done
 
-  # Set value directly
-  for overriden_value in $override_values; do
-    helm_cmd="$helm_cmd --set '$(echo $overriden_value | base64 -d)'"
-    helm_echo="$helm_echo --set '$(echo $overriden_value | base64 -d)'"
-  done
+    # Set value directly
+    for overriden_value in $override_values; do
+        helm_cmd="$helm_cmd --set '$(echo $overriden_value | base64 -d)'"
+        helm_echo="$helm_echo --set '$(echo $overriden_value | base64 -d)'"
+    done
 
-  # Get value from given path, but hide the value in the echo
-  for overriden_secret_file in $override_secrets_file; do
-    # Get key and value for each overridden file value
-    key=${overriden_secret_file%%=*}
-    value=${overriden_secret_file#*=}
-    helm_cmd="$helm_cmd --set '$key=$(cat $source/$value)'"
-    helm_echo="$helm_echo --set $key=***HIDDEN***"
-  done
+    # Get value from given path, but hide the value in the echo
+    for overriden_secret_file in $override_secrets_file; do
+        # Get key and value for each overridden file value
+        key=${overriden_secret_file%%=*}
+        value=${overriden_secret_file#*=}
+        helm_cmd="$helm_cmd --set '$key=$(cat $source/$value)'"
+        helm_echo="$helm_echo --set $key=***HIDDEN***"
+    done
 
-  # Set value directly, but hide the value in the echo
-  for overriden_secret in $override_secrets; do
-    kv=$(echo $overriden_secret | base64 -d)
-    key=${kv%%=*}
-    value=${kv#*=}
-    helm_cmd="$helm_cmd --set '$kv'"
-    helm_echo="$helm_echo --set '$key=***HIDDEN***'"
-  done
+    # Set value directly, but hide the value in the echo
+    for overriden_secret in $override_secrets; do
+        kv=$(echo $overriden_secret | base64 -d)
+        key=${kv%%=*}
+        value=${kv#*=}
+        helm_cmd="$helm_cmd --set '$kv'"
+        helm_echo="$helm_echo --set '$key=***HIDDEN***'"
+    done
 }
 
 helm_install() {
-  helm_cmd="helm install"
-  helm_echo="helm install"
-  helm_cmd="$helm_cmd --namespace $namespace --tiller-namespace $tiller_namespace"
-  helm_echo="$helm_echo --namespace $namespace --tiller-namespace $tiller_namespace"
-  if [ -n "$release" ]; then
-    helm_cmd="$helm_cmd -n $release"
-    helm_echo="$helm_echo -n $release"
-  fi
-  if [ -n "$values" ]; then
-    for value in $values; do
-      helm_cmd="$helm_cmd -f $source/$value"
-      helm_echo="$helm_echo -f $source/$value"
-    done
-  fi
-  set_overriden_values
-  if [ "$replace" = true ]; then
-    helm_cmd="$helm_cmd --replace"
-    helm_echo="$helm_echo --replace"
-  fi
-  if [ "$debug" = true ]; then
-    helm_cmd="$helm_cmd --dry-run --debug"
-    helm_echo="$helm_echo --dry-run --debug"
-  fi
-  if [ "$devel" = true ]; then
-    helm_cmd="$helm_cmd --devel"
-    helm_echo="$helm_echo --devel"
-  fi
-  if [ -n "$wait_until_ready" ] && [ "$wait_until_ready" -gt "0" ]; then
-    helm_cmd="$helm_cmd --wait --timeout $wait_until_ready"
-  fi
-  if [ -n "$version" ]; then
-    helm_cmd="$helm_cmd --version $version"
-    helm_echo="$helm_echo --version $version"
-  fi
-  logfile="/tmp/log"
-  mkdir -p /tmp
-  helm_cmd="$helm_cmd $chart_full | tee $logfile"
-  helm_echo="$helm_echo $chart_full | tee $logfile"
-  echo "Running command $helm_echo"
-  eval "$helm_cmd"
+    helm_cmd="$helm_request_base install --namespace $namespace"
+    helm_echo="$helm_request_base install --namespace $namespace"
+    if [ -n "$release" ]; then
+        helm_cmd="$helm_cmd -n $release"
+        helm_echo="$helm_echo -n $release"
+    fi
+    if [ -n "$values" ]; then
+        for value in $values; do
+            helm_cmd="$helm_cmd -f $source/$value"
+            helm_echo="$helm_echo -f $source/$value"
+        done
+    fi
+    set_overriden_values
+    if [ "$replace" = true ]; then
+        helm_cmd="$helm_cmd --replace"
+        helm_echo="$helm_echo --replace"
+    fi
+    if [ "$debug" = true ]; then
+        helm_cmd="$helm_cmd --dry-run --debug"
+        helm_echo="$helm_echo --dry-run --debug"
+    fi
+    if [ "$devel" = true ]; then
+        helm_cmd="$helm_cmd --devel"
+        helm_echo="$helm_echo --devel"
+    fi
+    if [ -n "$wait_until_ready" ] && [ "$wait_until_ready" -gt "0" ]; then
+        helm_cmd="$helm_cmd --wait --timeout $wait_until_ready"
+    fi
+    if [ -n "$version" ]; then
+        helm_cmd="$helm_cmd --version $version"
+        helm_echo="$helm_echo --version $version"
+    fi
+    logfile="/tmp/log"
+    mkdir -p /tmp
+    helm_cmd="$helm_cmd $chart_full | tee $logfile"
+    helm_echo="$helm_echo $chart_full | tee $logfile"
+    echo "Running command $helm_echo"
+    eval "$helm_cmd"
 
-  # Find the name of the release
-  release=`cat $logfile | grep "NAME:" | awk '{print $2}'`
+    # Find the name of the release
+    release=`cat $logfile | grep "NAME:" | awk '{print $2}'`
 }
 
 # Find the current revision of a helm release
 current_revision() {
-  revision=`helm history --tiller-namespace $tiller_namespace $release | grep "DEPLOYED" | awk '{print $1}'`
-  echo $revision
+    revision=`$helm_request_base history $release | grep "DEPLOYED" | awk '{print $1}'`
+    echo $revision
 }
 
 helm_upgrade() {
-  helm_cmd="helm upgrade --tiller-namespace $tiller_namespace $release"
-  helm_echo="helm upgrade --tiller-namespace $tiller_namespace $release"
-  if [ -n "$values" ]; then
-    for value in $values; do
-      helm_cmd="$helm_cmd -f $source/$value"
-      helm_echo="$helm_echo -f $source/$value"
-    done
-  fi
-  if [ -n "$wait_until_ready" ] && [ "$wait_until_ready" -gt "0" ]; then
-    helm_cmd="$helm_cmd --wait --timeout $wait_until_ready"
-    helm_echo="$helm_echo --wait --timeout $wait_until_ready"
-  fi
-  set_overriden_values
-  if [ "$debug" = true ]; then
-    helm_cmd="$helm_cmd --dry-run --debug"
-    helm_echo="$helm_echo --dry-run --debug"
-  fi
-  if [ "$devel" = true ]; then
-    helm_cmd="$helm_cmd --devel"
-    helm_echo="$helm_echo --devel"
-  fi
-  if [ -n "$version" ]; then
-    helm_cmd="$helm_cmd --version $version"
-    helm_echo="$helm_echo --version $version"
-  fi
-  if [ "$recreate_pods" = true ]; then
-    helm_cmd="$helm_cmd --recreate-pods"
-    helm_echo="$helm_echo --recreate-pods"
-  fi
-  logfile="/tmp/log"
-  mkdir -p /tmp
-  helm_cmd="$helm_cmd $chart_full | tee $logfile"
-  helm_echo="$helm_echo $chart_full | tee $logfile"
-  echo "Running command $helm_echo"
-  eval "$helm_cmd"
+    helm_cmd="$helm_request_base upgrade $release"
+    helm_echo="$helm_request_base upgrade $release"
+    if [ -n "$values" ]; then
+        for value in $values; do
+            helm_cmd="$helm_cmd -f $source/$value"
+            helm_echo="$helm_echo -f $source/$value"
+        done
+    fi
+    if [ -n "$wait_until_ready" ] && [ "$wait_until_ready" -gt "0" ]; then
+        helm_cmd="$helm_cmd --wait --timeout $wait_until_ready"
+        helm_echo="$helm_echo --wait --timeout $wait_until_ready"
+    fi
+    set_overriden_values
+    if [ "$debug" = true ]; then
+        helm_cmd="$helm_cmd --dry-run --debug"
+        helm_echo="$helm_echo --dry-run --debug"
+    fi
+    if [ "$devel" = true ]; then
+        helm_cmd="$helm_cmd --devel"
+        helm_echo="$helm_echo --devel"
+    fi
+    if [ -n "$version" ]; then
+        helm_cmd="$helm_cmd --version $version"
+        helm_echo="$helm_echo --version $version"
+    fi
+    if [ "$recreate_pods" = true ]; then
+        helm_cmd="$helm_cmd --recreate-pods"
+        helm_echo="$helm_echo --recreate-pods"
+    fi
+    logfile="/tmp/log"
+    mkdir -p /tmp
+    helm_cmd="$helm_cmd $chart_full | tee $logfile"
+    helm_echo="$helm_echo $chart_full | tee $logfile"
+    echo "Running command $helm_echo"
+    eval "$helm_cmd"
 }
 
 helm_delete() {
-  if [ -z "$release" ]; then
-    echo "invalid payload (missing release if delete=true)"
-    exit 1
-  fi
-  echo "Deleting the release $release..."
-  helm_cmd="helm delete --tiller-namespace $tiller_namespace"
-  helm_echo="helm delete --tiller-namespace $tiller_namespace"
-  if [ "$debug" = true ]; then
-    helm_cmd="$helm_cmd --dry-run --debug"
-    helm_echo="$helm_echo --dry-run --debug"
-  fi
-  logfile="/tmp/log"
-  mkdir -p /tmp
-  helm_cmd="$helm_cmd $release | tee $logfile"
-  helm_echo="$helm_echo $release | tee $logfile"
-  echo "Running command $helm_echo"
-  eval $helm_cmd
+    if [ -z "$release" ]; then
+        echo "invalid payload (missing release if delete=true)"
+        exit 1
+    fi
+    echo "Deleting the release $release..."
+    helm_cmd="$helm_request_base delete"
+    helm_echo="$helm_request_base delete"
+    if [ "$debug" = true ]; then
+        helm_cmd="$helm_cmd --dry-run --debug"
+        helm_echo="$helm_echo --dry-run --debug"
+    fi
+    logfile="/tmp/log"
+    mkdir -p /tmp
+    helm_cmd="$helm_cmd $release | tee $logfile"
+    helm_echo="$helm_echo $release | tee $logfile"
+    echo "Running command $helm_echo"
+    eval $helm_cmd
 }
 
 helm_purge() {
-  if [ -z "$release" ]; then
-    echo "invalid payload (missing release if delete=true)"
-    exit 1
-  fi
-  echo "Deleting with purge the release $release..."
-  helm_cmd="helm delete --purge"
-  helm_echo="helm delete --purge"
-  if [ "$debug" = true ]; then
-    helm_cmd="$helm_cmd --dry-run --debug"
-    helm_echo="$helm_echo --dry-run --debug"
-  fi
-  logfile="/tmp/log"
-  mkdir -p /tmp
-  helm_cmd="$helm_cmd $release | tee $logfile"
-  helm_echo="$helm_echo $release | tee $logfile"
-  echo "Running command $helm_echo"
-  eval $helm_cmd
+    if [ -z "$release" ]; then
+        echo "invalid payload (missing release if delete=true)"
+        exit 1
+    fi
+    echo "Deleting with purge the release $release..."
+    helm_cmd="helm delete --purge"
+    helm_echo="helm delete --purge"
+    if [ "$debug" = true ]; then
+        helm_cmd="$helm_cmd --dry-run --debug"
+        helm_echo="$helm_echo --dry-run --debug"
+    fi
+    logfile="/tmp/log"
+    mkdir -p /tmp
+    helm_cmd="$helm_cmd $release | tee $logfile"
+    helm_echo="$helm_echo $release | tee $logfile"
+    echo "Running command $helm_echo"
+    eval $helm_cmd
 }
 
 wait_ready_notice() {
-  if [ -n "$wait_until_ready" ] && [ "$wait_until_ready" -gt "0" ]; then
-    echo "Waiting until deployment of $release is ready... (up to $wait_until_ready seconds)"
-  fi
+    if [ -n "$wait_until_ready" ] && [ "$wait_until_ready" -gt "0" ]; then
+        echo "Waiting until deployment of $release is ready... (up to $wait_until_ready seconds)"
+    fi
+}
+
+is_deployed() {
+    if [ -n "$1" ]; then
+        set +e
+        set +o pipefail
+        eval "$helm_request_base history $1" 2>&1 | grep 'DEPLOYED' > /dev/null
+        if [ $? = 0 ]; then
+            # exists
+            echo true
+        else
+            # does not exist
+            echo false
+        fi
+        set -o pipefail
+        set -e
+    else
+        echo false
+    fi
 }
 
 
 if [ "$delete" = true ]; then
-  if [ "$purge" = true ]; then
-    helm_purge
-  else
-    helm_delete
-  fi
-  result="$(jq -n "{version:{release:\"$release\", deleted: \"true\"}, metadata: [{name: \"release\", value: \"$release\"}]}")"
-  echo "$result" | jq -s add  >&3
+    if [ "$purge" = true ]; then
+        helm_purge
+    else
+        helm_delete
+    fi
+    result="$(jq -n "{version:{release:\"$release\", deleted: \"true\"}, metadata: [{name: \"release\", value: \"$release\"}]}")"
+    echo "$result" | jq -s add  >&3
 else
-  if [ "$(is_deployed $release)" = true ]; then
-    echo "Upgrading $release"
-    helm_upgrade
-  else
-    echo "Installing $release"
-    helm_install
-  fi
+    echo "Choosing whether to install or upgrade..."
+    eval "$helm_request_base history $release"
+    if [ "$(is_deployed $release)" = "true" ]; then
+        echo "Upgrading $release"
+        helm_upgrade
+    else
+        echo "Installing $release"
+        helm_install
+    fi
 
-  revision=$(current_revision)
-  echo "Deployed revision $revision of $release"
-  wait_ready_notice
-  result="$(jq -n "{version:{release:\"$release\", revision:\"$revision\"}, metadata: [{name: \"release\", value: \"$release\"},{name: \"revision\", value: \"$revision\"}]}")"
-  echo "$result" | jq -s add  >&3
+    revision=$(current_revision)
+    echo "Deployed revision $revision of $release"
+    wait_ready_notice
+    result="$(jq -n "{version:{release:\"$release\", revision:\"$revision\"}, metadata: [{name: \"release\", value: \"$release\"},{name: \"revision\", value: \"$revision\"}]}")"
+    echo "$result" | jq -s add  >&3
 fi

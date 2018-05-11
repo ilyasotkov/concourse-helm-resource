@@ -2,33 +2,34 @@
 
 Install a [Helm chart](https://github.com/kubernetes/helm) to a generic Kubernetes cluster (using a kubeconfig file) or a Google Kubernetes Engine cluster (using a GCP service account JSON key) from [Concourse](https://concourse.ci/)
 
----
+### Differences with linkyard/concourse-helm-resource
 
-🔌 This repository is a fork of <https://github.com/linkyard/concourse-helm-resource>
-
-### Changes
+This resource is an aggressive fork of https://github.com/linkyard/concourse-helm-resource with these differences:
 
 - `kubeconfig` (a kubeconfig file) can be used for authenticating to Kubernetes
-- `gcloud_project`, `gcloud_cluster`, `gcloud_auth` can be used to fetch credentials for a Google Kubernetes Engine cluster
+- `gcloud_project`, `gcloud_cluster`, `gcloud_auth`, `gcloud_zone` can be used to fetch credentials for a Google Kubernetes Engine cluster
 - Native Helm `--wait` flag is used to determine the job's status (merged [PR #7](https://github.com/linkyard/concourse-helm-resource/pull/7))
+- Support for TLS-authenticated Tiller via `ca_cert`, `client_cert`, `client_key`
 
 ### Components
 
 | Component | Version |
 | --- | --- |
 | `helm` | 2.8.2 |
-| Google Cloud SDK | 197.0.0 |
+| `kubectl` | 1.9.6 |
+| Google Cloud SDK | 200.0.0 |
 
 ## Add resource type to pipeline
 
 Add the resource type to your pipeline:
-```
+
+```yaml
 resource_types:
 - name: helm
   type: docker-image
   source:
     repository: ilyasotkov/concourse-helm-resource
-    tag: 1.0.1
+    tag: 1.1.0
 ```
 
 
@@ -42,6 +43,7 @@ Authentication can be done either through a kubeconfig file or using GCP service
 
 * `gcloud_project`: *Required if `kubeconfig` is not present.* GCP project name
 * `gcloud_cluster`: *Required if `kubeconfig` is not present.* GKE cluster name
+* `gcloud_zone`: *Required if `kubeconfig` is not present.* GCP cluster compute zone.
 * `gcloud_auth`: *Required if `kubeconfig` is not present.* GCP JSON private key file contents
 
 ### Optional values
@@ -52,6 +54,10 @@ Authentication can be done either through a kubeconfig file or using GCP service
 * `tiller_namespace`: *Optional.* Kubernetes namespace where tiller is running (or will be installed to). (Default: kube-system)
 * `tiller_service_account`: *Optional* Name of the service account that tiller will use (only applies if helm_init_server is true).
 * `repos`: *Optional.* Array of Helm repositories to initialize, each repository is defined as an object with `name` and `url` properties.
+
+* `ca_cert`: *Optional* Cert to verify Tiller's server certificate.
+* `client_cert`: *Optional* Helm's client certificate for authenticating to Tiller.
+* `client_key`: *Optional* Helm's private key for authenticating to Tiller.
 
 ## Behavior
 
@@ -135,6 +141,9 @@ resources:
       "auth_provider_x509_cert_url": "XXX",
       "client_x509_cert_url": "XXX"
       }
+    ca_cert: ((helm-auth.ca))
+    client_cert: ((helm-auth.cert))
+    client_key: ((helm-auth.key))
     repos:
     - name: my-charts
       url: https://my-charts.github.io/charts
