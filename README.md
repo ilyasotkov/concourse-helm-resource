@@ -17,18 +17,19 @@ Install a [Helm chart](https://github.com/kubernetes/helm) to a generic Kubernet
 | Component | Version |
 | --- | --- |
 | `helm` | 2.8.2 |
-| Google Cloud SDK | 197.0.0 |
+| Google Cloud SDK | 200.0.0 |
 
 ## Add resource type to pipeline
 
 Add the resource type to your pipeline:
-```
+
+```yaml
 resource_types:
 - name: helm
   type: docker-image
   source:
     repository: ilyasotkov/concourse-helm-resource
-    tag: 1.0.1
+    tag: 1.0.2
 ```
 
 
@@ -52,6 +53,10 @@ Authentication can be done either through a kubeconfig file or using GCP service
 * `tiller_namespace`: *Optional.* Kubernetes namespace where tiller is running (or will be installed to). (Default: kube-system)
 * `tiller_service_account`: *Optional* Name of the service account that tiller will use (only applies if helm_init_server is true).
 * `repos`: *Optional.* Array of Helm repositories to initialize, each repository is defined as an object with `name` and `url` properties.
+
+* `ca_cert`: *Optional* Cert to verify Tiller's server certificate.
+* `client_cert`: *Optional* Helm's client certificate for authenticating to Tiller.
+* `client_key`: *Optional* Helm's private key for authenticating to Tiller.
 
 ## Behavior
 
