@@ -254,7 +254,6 @@ if [ "$delete" = true ]; then
     echo "$result" | jq -s add  >&3
 else
     echo "Choosing whether to install or upgrade..."
-    eval "$helm_request_base history $release"
     if [ "$(is_deployed $release)" = "true" ]; then
         echo "Upgrading $release"
         helm_upgrade
