@@ -15,9 +15,9 @@ This resource is an aggressive fork of https://github.com/linkyard/concourse-hel
 
 | Component | Version |
 | --- | --- |
-| `helm` | 2.8.2 |
+| `helm` | 2.9.1 |
 | `kubectl` | 1.9.6 |
-| Google Cloud SDK | 200.0.0 |
+| Google Cloud SDK | 201.0.0 |
 
 ## Add resource type to pipeline
 
@@ -29,7 +29,7 @@ resource_types:
   type: docker-image
   source:
     repository: ilyasotkov/concourse-helm-resource
-    tag: 1.1.0
+    tag: 1.1.1
 ```
 
 
@@ -128,6 +128,7 @@ resources:
   source:
     gcloud_project: my-project-696969
     gcloud_cluster: k8s-cluster
+    gcloud_zone: europe-west1
     gcloud_auth: |
       {
       "type": "service_account",
