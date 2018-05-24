@@ -1,5 +1,7 @@
 # Helm Resource for Concourse
 
+[![Docker Build Status](https://img.shields.io/docker/build/jrottenberg/ffmpeg.svg)](https://hub.docker.com/r/ilyasotkov/concourse-helm-resource)
+
 Install a [Helm chart](https://github.com/kubernetes/helm) to a generic Kubernetes cluster (using a kubeconfig file) or a Google Kubernetes Engine cluster (using a GCP service account JSON key) from [Concourse](https://concourse.ci/)
 
 ### Differences with linkyard/concourse-helm-resource
